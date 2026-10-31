@@ -19,7 +19,7 @@ local AL = AlwaysLogging
 AL.name        = "AlwaysLogging"
 AL.displayName = "Always Logging"
 AL.version     = "1.0.0"
-AL.author      = "Chris Gentle"
+AL.author      = "@brainsnorkel"
 
 local EM = EVENT_MANAGER
 local SV_NAME    = "AlwaysLoggingSV"
