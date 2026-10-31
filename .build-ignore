@@ -1,0 +1,15 @@
+.git
+.github
+.githooks
+.gitignore
+.gitattributes
+.build-ignore
+.luacheckrc
+scripts
+tests
+dist
+README.md
+CHANGELOG.md
+.DS_Store
+.omc
+.claude

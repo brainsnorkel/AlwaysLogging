@@ -1,0 +1,56 @@
+#!/bin/sh
+# Pre-commit checks for this ESO addon. Enable with:
+#   git config core.hooksPath .githooks
+#
+# The game loads this folder directly, so a syntax error committed here is a
+# broken addon in the next /reloadui. These are the same checks CI runs.
+set -e
+
+fail=0
+say() { printf '%s\n' "$*"; }
+
+lua_bin=$(command -v lua5.1 || command -v lua || true)
+luac_bin=$(command -v luac5.1 || command -v luac || true)
+
+if [ -n "$luac_bin" ]; then
+    for f in $(git diff --cached --name-only --diff-filter=ACM | grep '\.lua$' || true); do
+        [ -f "$f" ] || continue
+        if "$luac_bin" -p "$f"; then say "ok   lua      $f"; else say "FAIL lua      $f"; fail=1; fi
+    done
+else
+    say "skip lua syntax (no lua/luac on PATH)"
+fi
+
+if command -v xmllint >/dev/null 2>&1; then
+    for f in $(git diff --cached --name-only --diff-filter=ACM | grep '\.xml$' || true); do
+        [ -f "$f" ] || continue
+        if xmllint --noout "$f"; then say "ok   xml      $f"; else say "FAIL xml      $f"; fail=1; fi
+    done
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+    if python3 .github/scripts/check-manifest.py >/dev/null; then
+        say "ok   manifest"
+    else
+        say "FAIL manifest"
+        python3 .github/scripts/check-manifest.py || true
+        fail=1
+    fi
+fi
+
+if [ -n "$lua_bin" ] && [ -f tests/run.lua ]; then
+    if "$lua_bin" tests/run.lua >/dev/null; then
+        say "ok   harness"
+    else
+        say "FAIL harness"
+        "$lua_bin" tests/run.lua || true
+        fail=1
+    fi
+fi
+
+if [ "$fail" -ne 0 ]; then
+    say ""
+    say "pre-commit checks failed. Fix the above, or commit with --no-verify to override."
+    exit 1
+fi
+exit 0

@@ -1,0 +1,76 @@
+name: release
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  checks:
+    uses: ./.github/workflows/_checks.yml
+
+  release:
+    needs: [ checks ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Read manifest version
+        id: manifest
+        run: |
+          addon="${{ github.event.repository.name }}"
+          version=$(sed -n 's/^## Version:[[:space:]]*//p' "$addon.txt" | head -1 | tr -d '\r')
+          echo "addon=$addon" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "addon=$addon version=$version"
+
+      # The zip is built from the committed files with no rewriting, so the
+      # manifest version has to agree with the tag or the release would ship a
+      # version number that does not match its own contents.
+      - name: Tag must match the manifest version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          manifest_version="${{ steps.manifest.outputs.version }}"
+          if [ "$tag_version" != "$manifest_version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME implies version $tag_version but the manifest says $manifest_version. Update '## Version:' or retag."
+            exit 1
+          fi
+          echo "tag and manifest agree on $manifest_version"
+
+      - name: Build zip
+        run: scripts/package.sh dist
+
+      # ESO silently refuses an addon whose folder name does not match its
+      # manifest, so confirm the archive really has one correctly named folder.
+      - name: Verify archive layout
+        run: |
+          addon="${{ steps.manifest.outputs.addon }}"
+          zip="dist/$addon-${{ steps.manifest.outputs.version }}.zip"
+          roots=$(unzip -Z1 "$zip" | cut -d/ -f1 | sort -u)
+          if [ "$roots" != "$addon" ]; then
+            echo "::error::archive roots are '$roots', expected exactly '$addon'"
+            exit 1
+          fi
+          unzip -Z1 "$zip" | grep -qx "$addon/$addon.txt" || {
+            echo "::error::archive is missing $addon/$addon.txt"; exit 1; }
+          echo "archive layout ok"
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          addon="${{ steps.manifest.outputs.addon }}"
+          version="${{ steps.manifest.outputs.version }}"
+          gh release create "$GITHUB_REF_NAME" "dist/$addon-$version.zip" \
+            --title "$version" \
+            --generate-notes
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ steps.manifest.outputs.addon }}-${{ steps.manifest.outputs.version }}
+          path: dist/*.zip

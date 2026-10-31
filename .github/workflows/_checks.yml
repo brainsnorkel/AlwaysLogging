@@ -1,0 +1,35 @@
+name: checks
+
+on:
+  workflow_call:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # ESO runs Lua 5.1, so compile with 5.1 rather than whatever is newest.
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1
+
+      - name: Lua syntax
+        run: |
+          status=0
+          for f in $(git ls-files '*.lua'); do
+            if luac5.1 -p "$f"; then echo "ok   $f"; else echo "::error file=$f::Lua syntax error"; status=1; fi
+          done
+          exit $status
+
+      - name: Luacheck
+        uses: lunarmodules/luacheck@v1
+        with:
+          args: . --config .luacheckrc
+
+      - name: Manifest integrity
+        run: python3 .github/scripts/check-manifest.py
+
+      - name: Offline harness
+        run: lua5.1 tests/run.lua

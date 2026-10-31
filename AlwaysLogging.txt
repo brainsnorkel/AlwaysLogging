@@ -1,0 +1,15 @@
+## Title: Always Logging
+## Description: Turns on encounter logging (/encounterlog) every time you enter the game and keeps it on. Account-wide or per-character settings; /alog to toggle.
+## Author: Chris Gentle
+## Version: 1.0.0
+## AddOnVersion: 1
+## APIVersion: 101051 101052
+## SavedVariables: AlwaysLoggingSV
+## OptionalDependsOn: LibAddonMenu-2.0>=32
+
+## This Add-on is not created by, affiliated with or sponsored by ZeniMax Media Inc. or its affiliates.
+## The Elder Scrolls(R) and related logos are registered trademarks or trademarks of ZeniMax Media Inc. in the United States and/or other countries.
+## All rights reserved.
+
+AlwaysLogging.lua
+AlwaysLoggingSettings.lua

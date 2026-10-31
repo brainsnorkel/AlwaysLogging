@@ -1,0 +1,4 @@
+# ESO manifests conventionally use CRLF; keep it that way in the release zip too.
+AlwaysLogging.txt text eol=crlf
+*.sh text eol=lf
+.githooks/* text eol=lf
