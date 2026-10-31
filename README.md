@@ -24,6 +24,18 @@ It is a simpler take on Easy Stalking: instead of choosing places to log, it log
 
 The login status line, the "after every loading screen" status line, and the switch-off warning can each be turned off in settings.
 
+### On-screen indicator
+
+A small label beside the compass shows the logging state at a glance:
+
+| Shows | Means |
+|-------|-------|
+| 🟢 `Encounter log: on` (green) | Logging |
+| 🔴 `Encounter log: off` (red) | Not logging, although Always Logging should have it on: you are losing a log |
+| 🟠 `Encounter log: off` (amber) | Not logging, as expected: Always Logging is off, or it is about to turn logging on after a loading screen |
+
+To move it: `/alog unlock`, show the cursor (the `.` key by default), drag it, then `/alog lock`. `/alog indicator` hides or shows it. It only appears with the normal HUD, not in menus.
+
 ## Slash commands
 
 `/alog` and `/alwayslogging` are interchangeable.
@@ -36,6 +48,9 @@ The login status line, the "after every loading screen" status line, and the swi
 | `/alog status` | Show whether encounter logging is on, and which settings are in use |
 | `/alog account` | Use the account-wide settings on this character |
 | `/alog character` | Give this character its own settings (`char` and `toon` also work) |
+| `/alog indicator` | Show or hide the on-screen indicator |
+| `/alog unlock` | Unlock the indicator so it can be dragged (it shows while unlocked, even if hidden) |
+| `/alog lock` | Lock the indicator in place |
 | `/alogsettings` | Open the settings panel (needs LibAddonMenu-2.0) |
 
 ## Account-wide or per-character
@@ -56,6 +71,11 @@ Open with `/alogsettings` or **Settings > Addons > Always Logging**.
 | Status when entering the game | On | Chat line after log in or `/reloadui` |
 | Status after every loading screen | Off | Chat line after every loading screen, even when nothing changed |
 | Warn when logging is turned off | On | Chat line when `/encounterlog` or another addon turns logging off |
+| Show indicator | On | The on-screen `Encounter log: on/off` label |
+| Lock position | On | Unlock to drag the indicator |
+| Reset position | | Put the indicator back beside the compass |
+
+Indicator visibility and position follow the account-wide/per-character choice like every other setting.
 
 ## Using it with Easy Stalking
 

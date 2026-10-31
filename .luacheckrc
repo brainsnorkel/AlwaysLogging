@@ -29,6 +29,20 @@ read_globals = {
     "IsEncounterLogEnabled",
     "SetEncounterLogEnabled",
 
+    -- ESO UI
+    "WINDOW_MANAGER",
+    "GuiRoot",
+    "HUD_SCENE",
+    "HUD_UI_SCENE",
+    "ZO_HUDFadeSceneFragment",
+    "CT_LABEL",
+    "CT_BACKDROP",
+    "TOP",
+    "BOTTOM",
+    "CENTER",
+    "DL_OVERLAY",
+    "DT_HIGH",
+
     -- Libraries and other addons
     "LibAddonMenu2",
     "EzStalking",

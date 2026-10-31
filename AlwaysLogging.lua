@@ -18,7 +18,7 @@ local AL = AlwaysLogging
 
 AL.name        = "AlwaysLogging"
 AL.displayName = "Always Logging"
-AL.version     = "1.0.0"
+AL.version     = "1.1.0"
 AL.author      = "@brainsnorkel"
 
 local EM = EVENT_MANAGER
@@ -37,6 +37,11 @@ AL.defaults = {
     chatOnLogin   = true,    -- status line when entering the game
     chatOnZone    = false,   -- status line after every loading screen
     warnOnOff     = true,    -- warn when something else turns logging off
+
+    indicator     = true,    -- on-screen "Encounter log: on/off"
+    locked        = true,
+    x             = 380,     -- indicator centre, offset from the screen centre (beside the compass)
+    y             = 40,      -- indicator top edge, from the top of the screen
 }
 
 -- Only the per-character table carries the scope flag.
@@ -90,6 +95,7 @@ local function SetLogging(on)
     SetEncounterLogEnabled(on)
     AL.applying = false
     AL.lastState = IsEncounterLogEnabled()
+    AL.Indicator.Update()
     return AL.lastState == on
 end
 
@@ -104,10 +110,17 @@ local function WillTurnOnAtApply()
     return AL.sv.enabled and (not AL.entered or AL.sv.reapplyOnZone)
 end
 
+-- Off although Always Logging wants it on, and no loading-screen apply is
+-- about to fix that: the case where a log is being lost.
+function AL.IsUnexpectedlyOff()
+    return not IsEncounterLogEnabled() and AL.sv.enabled and not (AL.applyPending and WillTurnOnAtApply())
+end
+
 -- Watches every call to SetEncounterLogEnabled, including the game's own
 -- /encounterlog command and other addons, so a log that is switched off
 -- behind this addon's back gets reported instead of silently lost.
 local function OnSetEncounterLogEnabled()
+    AL.Indicator.Update()
     if AL.applying then return end
     local now = IsEncounterLogEnabled()
     if now == AL.lastState then return end
@@ -150,6 +163,7 @@ function AL.Apply()
     AL.entered = true
     AL.applyPending = false
     AL.warnedThisZone = false
+    AL.Indicator.Update()
 
     if result == "failed" then
         AL.Print(FAILED_TEXT)
@@ -166,6 +180,7 @@ end
 
 local function OnPlayerActivated()
     AL.applyPending = true
+    AL.Indicator.Update()
     -- coalesce back-to-back loading screens into one apply
     EM:UnregisterForUpdate(APPLY_NAME)
     EM:RegisterForUpdate(APPLY_NAME, APPLY_DELAY_MS, function()
@@ -186,6 +201,7 @@ function AL.SetEnabled(enabled)
     else
         ok = not IsEncounterLogEnabled() or SetLogging(false)
     end
+    AL.Indicator.Update()   -- off stays off, but its colour depends on enabled
     if not ok then
         AL.Print(enabled and FAILED_TEXT or "could not turn encounter logging off. Try /encounterlog.")
         return
@@ -203,10 +219,21 @@ end
 function AL.SetAccountWide(useAccountWide)
     AL.charSV.useAccountWide = useAccountWide
     AL.sv = useAccountWide and AL.accountSV or AL.charSV
+    AL.Indicator.Refresh()   -- the other scope may place or show it differently
     if AL.sv.enabled and TurnOn() == "failed" then
         AL.Print(FAILED_TEXT)
     end
     AL.Print("now using " .. ScopeText() .. ". " .. AL.StatusText())
+end
+
+function AL.SetIndicatorShown(shown)
+    AL.sv.indicator = shown
+    AL.Indicator.Refresh()
+end
+
+function AL.SetIndicatorLocked(locked)
+    AL.sv.locked = locked
+    AL.Indicator.Refresh()
 end
 
 ---------------------------------------------------------------------------
@@ -219,6 +246,8 @@ local function PrintHelp()
     AL.Print("/alog status - show the encounter logging state")
     AL.Print("/alog account - use the account-wide settings on this character")
     AL.Print("/alog character - give this character its own settings")
+    AL.Print("/alog indicator - show or hide the on-screen indicator")
+    AL.Print("/alog unlock | lock - move the indicator, then fix it in place")
 end
 
 local function SlashHandler(args)
@@ -235,6 +264,15 @@ local function SlashHandler(args)
         AL.SetAccountWide(true)
     elseif cmd == "character" or cmd == "char" or cmd == "toon" then
         AL.SetAccountWide(false)
+    elseif cmd == "indicator" then
+        AL.SetIndicatorShown(not AL.sv.indicator)
+        AL.Print("indicator " .. (AL.sv.indicator and "shown." or "hidden."))
+    elseif cmd == "unlock" then
+        AL.SetIndicatorLocked(false)
+        AL.Print("indicator unlocked. Show the cursor, drag it, then /alog lock.")
+    elseif cmd == "lock" then
+        AL.SetIndicatorLocked(true)
+        AL.Print("indicator locked.")
     else
         PrintHelp()
     end
@@ -252,6 +290,7 @@ local function OnAddOnLoaded(_, addonName)
     AL.sv        = AL.charSV.useAccountWide and AL.accountSV or AL.charSV
     AL.lastState = IsEncounterLogEnabled()
 
+    AL.Indicator.Create()
     ZO_PostHook("SetEncounterLogEnabled", OnSetEncounterLogEnabled)
     EM:RegisterForEvent(AL.name, EVENT_PLAYER_ACTIVATED, OnPlayerActivated)
 

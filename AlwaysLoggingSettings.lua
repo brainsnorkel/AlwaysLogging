@@ -71,6 +71,22 @@ function S.Create()
             "Say so when /encounterlog or another addon turns logging off while Always Logging is on. "
                 .. "At most once per loading screen.",
             { disabled = Disabled }),
+        { type = "header", name = "On-screen indicator" },
+        Setting("indicator", "Show indicator",
+            "Shows \"Encounter log: on\" in green while logging. \"Encounter log: off\" is red when Always "
+                .. "Logging should be logging but is not, and amber when logging is off on purpose.",
+            { setFunc = function(v) AL.SetIndicatorShown(v) end }),
+        Setting("locked", "Lock position",
+            "Unlock, close the settings, show the cursor and drag the indicator. Then lock it here or with "
+                .. "/alog lock. While unlocked it shows even if switched off.",
+            { setFunc = function(v) AL.SetIndicatorLocked(v) end }),
+        {
+            type = "button",
+            name = "Reset position",
+            tooltip = "Put the indicator back beside the compass.",
+            func = function() AL.Indicator.ResetPosition() end,
+            width = "half",
+        },
     }
 
     LAM:RegisterAddonPanel(panelName, panelData)
